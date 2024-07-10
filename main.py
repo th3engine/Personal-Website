@@ -1,10 +1,12 @@
 from flask import Flask, request, render_template,flash, redirect, url_for
-from smtplib import SMTP
+from smtplib import SMTP, SMTPResponseException
 from dotenv import load_dotenv; load_dotenv()
-import os
+import os, logging
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY")
+
+log = logging.getLogger(__name__)
 
 
 projects = [
@@ -35,8 +37,9 @@ def home():
             send_mail(**request.form)
             flash("Thank you for the message. I will aim to respond within 24hours",'info')
             return redirect('/#contact')
-        except TypeError:
-            flash("Message Not Sent (Error 500). Please Ensure all fields are complete",'error')
+        except (TypeError,SMTPResponseException) as error:
+            log.error(f"Error: {error}")
+            flash("Message Not Sent (Error 500). Internal server Error",'error')
             return redirect(url_for('home'))
     return render_template('index.html',projects=projects)
 
